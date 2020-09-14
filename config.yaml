@@ -1,0 +1,64 @@
+---
+port: 7890  #默认http代理端口
+socks-port: 7891  #默认socks代理端口
+redir-port: 7892  #默认redir端口
+allow-lan: true
+mode: Rule
+log-level: info
+external-controller: 0.0.0.0:9090  #控制台端口
+experimental:
+  interface-name: eth0  #（尝试）TUN模式下，流量出口，路由器为WAN口
+  ignore-resolve-fail: true  #忽略DNS解析失败
+  
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:55  #监听路由器55端口
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  #enhanced-mode: redir-host
+  nameserver:
+    - 114.114.114.114
+    - 223.5.5.5
+    - tls://dns.rubyfish.cn:853
+  fallback:
+    - 114.114.114.114
+    - tls://dns.rubyfish.cn:853
+    - 8.8.8.8
+
+tun:
+  enable: true  #（尝试）TUN模式
+  
+proxy-provider: #使用proxy-provider对不同的规则进行订阅，以Dler为例
+  Dler:
+    type: http
+    path: ./Dler.yaml
+    url: https://dler.cloud/subscribe/token?protocols=ss&list=clash&lv=3&noarea=cn
+    interval: 3600
+    health-check:
+        enable: true
+        url: http://www.gstatic.com/generate_204
+        interval: 300
+   
+  ...
+        
+Proxy Group:
+  - name: Auto - UrlTest
+    type: url-test
+    use:
+      - Dler
+    url: http://www.gstatic.com/generate_204
+    interval: "1800"
+
+  - name: Proxy
+    type: select
+    use:
+      - Dler
+    proxies:
+      - Auto - UrlTest
+      - DIRECT
+
+  ...
+
+Rule:
+  ...
